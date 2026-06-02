@@ -93,13 +93,57 @@ if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
 fi
 
-# 7. Hyprland configuration info
+# 7. Hyprland configuration
 echo "Installing Hyprland configuration template..."
 sudo mkdir -p /usr/share/rapidcalc
 sudo cp hyprland-rapidcalc.conf /usr/share/rapidcalc/
 
+# Detect actual user's home directory (resolves issue when running under sudo)
+REAL_USER=${SUDO_USER:-$USER}
+REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+HYPR_CONF="$REAL_HOME/.config/hypr/hyprland.conf"
+
+if [ -f "$HYPR_CONF" ]; then
+    echo "Hyprland configuration detected for user '$REAL_USER' at: $HYPR_CONF"
+    # Clean previous rules if exist
+    sed -i '/# === RAPIDCALC HYPRLAND RULES START ===/,/# === RAPIDCALC HYPRLAND RULES END ===/d' "$HYPR_CONF"
+    
+    # Append the rules
+    echo "Appending window rules to $HYPR_CONF..."
+    cat << 'EOF' >> "$HYPR_CONF"
+
+# === RAPIDCALC HYPRLAND RULES START ===
+# Reglas para RapidCalc (Calculadora) en Hyprland
+windowrulev2 = float, title:^(RapidCalc)$
+windowrulev2 = pin, title:^(RapidCalc)$
+windowrulev2 = alwaysontop, title:^(RapidCalc)$
+windowrulev2 = workspace, special, title:^(RapidCalc)$
+windowrulev2 = float, class:^(calculator-tauri-svelte)$
+windowrulev2 = pin, class:^(calculator-tauri-svelte)$
+windowrulev2 = alwaysontop, class:^(calculator-tauri-svelte)$
+windowrulev2 = move 78% 60%, title:^(RapidCalc)$
+windowrulev2 = size 340 520, title:^(RapidCalc)$
+windowrulev2 = noblur, title:^(RapidCalc)$
+windowrulev2 = noshadow, title:^(RapidCalc)$
+windowrulev2 = focusonactivate off, title:^(RapidCalc)$
+# === RAPIDCALC HYPRLAND RULES END ===
+EOF
+    
+    # Reload hyprland configuration if active
+    if command -v hyprctl >/dev/null 2>&1; then
+        echo "Reloading Hyprland configuration..."
+        sudo -u "$REAL_USER" XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" hyprctl reload || true
+    fi
+else
+    echo "Hyprland config not found at $HYPR_CONF. Skipping automatic rules injection."
+fi
+
 echo "--------------------------------------------------"
 echo "RapidCalc installed successfully!"
 echo "You can launch it by running 'rapidcalc' or from your application launcher."
-echo "If you use Hyprland, see /usr/share/rapidcalc/hyprland-rapidcalc.conf for optimization rules."
+if [ -f "$HYPR_CONF" ]; then
+    echo "Hyprland window rules have been automatically added to your config!"
+else
+    echo "If you use Hyprland, manually apply the rules in /usr/share/rapidcalc/hyprland-rapidcalc.conf."
+fi
 echo "--------------------------------------------------"
