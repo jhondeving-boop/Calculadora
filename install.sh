@@ -39,8 +39,8 @@ done
 echo "Installing project Node.js dependencies..."
 npm install
 
-echo "Building RapidCalc in production/release mode..."
-npm run tauri:build
+echo "Building RapidCalc in production/release mode (skipping bundle formats)..."
+npx tauri build --no-bundle
 
 # 5. Determine binary location
 BIN_PATH="src-tauri/target/release/rapidcalc"
@@ -138,6 +138,24 @@ else
     echo "Hyprland config not found at $HYPR_CONF. Skipping automatic rules injection."
 fi
 
+# 8. Configure Autostart (Launch on boot)
+AUTOSTART_DIR="$REAL_HOME/.config/autostart"
+echo "--------------------------------------------------"
+echo -n "Do you want RapidCalc to start automatically when your system boots? [y/N]: "
+# Under sudo, we read from the tty to allow interactive input
+read -r CONFIRM < /dev/tty || CONFIRM="n"
+
+if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "Configuring autostart for user '$REAL_USER'..."
+    sudo -u "$REAL_USER" mkdir -p "$AUTOSTART_DIR"
+    sudo -u "$REAL_USER" ln -sf /usr/share/applications/rapidcalc.desktop "$AUTOSTART_DIR/rapidcalc.desktop"
+    echo "Autostart configured successfully!"
+    HAS_AUTOSTART=true
+else
+    echo "Autostart configuration skipped."
+    HAS_AUTOSTART=false
+fi
+
 echo "--------------------------------------------------"
 echo "RapidCalc installed successfully!"
 echo "You can launch it by running 'rapidcalc' or from your application launcher."
@@ -145,5 +163,8 @@ if [ -f "$HYPR_CONF" ]; then
     echo "Hyprland window rules have been automatically added to your config!"
 else
     echo "If you use Hyprland, manually apply the rules in /usr/share/rapidcalc/hyprland-rapidcalc.conf."
+fi
+if [ "$HAS_AUTOSTART" = true ]; then
+    echo "RapidCalc will run automatically next time you log in."
 fi
 echo "--------------------------------------------------"

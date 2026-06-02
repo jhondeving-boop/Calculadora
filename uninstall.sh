@@ -34,6 +34,13 @@ if [ -f "$HYPR_CONF" ]; then
     fi
 fi
 
+# Clean Autostart configuration
+AUTOSTART_FILE="$REAL_HOME/.config/autostart/rapidcalc.desktop"
+if [ -L "$AUTOSTART_FILE" ] || [ -f "$AUTOSTART_FILE" ]; then
+    echo "Removing autostart entry..."
+    sudo -u "$REAL_USER" rm -f "$AUTOSTART_FILE"
+fi
+
 # Update icon cache
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
