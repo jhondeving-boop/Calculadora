@@ -167,10 +167,7 @@ if [ -n "$TARGET_CONF" ]; then
 # === RAPIDCALC HYPRLAND RULES START ===
 # Reglas para RapidCalc (Calculadora) en Hyprland (Sintaxis Nueva v0.53+)
 windowrule = float 1,match:title ^(RapidCalc)$
-windowrule = pin 1,match:title ^(RapidCalc)$
-windowrule = workspace special,match:title ^(RapidCalc)$
 windowrule = float 1,match:class ^(calculator-tauri-svelte)$
-windowrule = pin 1,match:class ^(calculator-tauri-svelte)$
 windowrule = move 78% 60%,match:title ^(RapidCalc)$
 windowrule = size 340 520,match:title ^(RapidCalc)$
 # === RAPIDCALC HYPRLAND RULES END ===
@@ -181,17 +178,9 @@ EOF
 # === RAPIDCALC HYPRLAND RULES START ===
 # Reglas para RapidCalc (Calculadora) en Hyprland (Sintaxis Heredada)
 windowrulev2 = float, title:^(RapidCalc)$
-windowrulev2 = pin, title:^(RapidCalc)$
-windowrulev2 = alwaysontop, title:^(RapidCalc)$
-windowrulev2 = workspace, special, title:^(RapidCalc)$
 windowrulev2 = float, class:^(calculator-tauri-svelte)$
-windowrulev2 = pin, class:^(calculator-tauri-svelte)$
-windowrulev2 = alwaysontop, class:^(calculator-tauri-svelte)$
 windowrulev2 = move 78% 60%, title:^(RapidCalc)$
 windowrulev2 = size 340 520, title:^(RapidCalc)$
-windowrulev2 = noblur, title:^(RapidCalc)$
-windowrulev2 = noshadow, title:^(RapidCalc)$
-windowrulev2 = focusonactivate off, title:^(RapidCalc)$
 # === RAPIDCALC HYPRLAND RULES END ===
 EOF
     fi
