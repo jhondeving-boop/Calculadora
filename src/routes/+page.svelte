@@ -96,7 +96,7 @@
     <Sidebar 
       isOpen={ui.showSidebar} 
       toggleSidebar={() => ui.toggleSidebar()}
-      onSelectMode={(m: AppMode) => { engine.mode = m; }} 
+      onSelectMode={(m: AppMode) => { engine.mode = m; ui.showSidebar = false; }} 
     />
 
     <main class="main-view" class:is-compact={ui.isCompact}>

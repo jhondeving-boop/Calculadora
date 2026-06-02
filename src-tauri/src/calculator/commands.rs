@@ -216,7 +216,7 @@ pub fn set_floating_mode(window: Window, enabled: bool) -> Result<String, String
         
         if std::env::var("HYPRLAND_INSTANCE_SIGNATURE").is_ok() {
             // Buscamos la ventana por título/clase y obtenemos su dirección
-            let get_addr = "hyprctl clients -j | jq -r '.[] | select(.class == \"calculator-tauri-svelte\" or .title == \"RapidCalc\") | .address'";
+            let get_addr = "hyprctl clients -j | jq -r '.[] | select(.class == \"rapidcalc\" or .class == \"calculator-tauri-svelte\" or .title == \"RapidCalc\") | .address'";
             let output = Command::new("sh").args(["-c", get_addr]).output();
             
             if let Ok(o) = output {
