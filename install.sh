@@ -27,35 +27,62 @@ else
     echo "All system dependencies are already installed."
 fi
 
-# 3. Check for development tools
-for cmd in node npm cargo; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        echo "Error: '$cmd' is not installed. Please install it to build RapidCalc."
-        exit 1
+# 3. Detect if a precompiled binary already exists
+PRECOMPILED_BIN=""
+for path in "src-tauri/target/release/calculator-tauri-svelte" "src-tauri/target/release/RapidCalc" "src-tauri/target/release/rapidcalc"; do
+    if [ -f "$path" ]; then
+        PRECOMPILED_BIN="$path"
+        break
     fi
 done
 
-# 4. Install Node dependencies and build
-echo "Installing project Node.js dependencies..."
-npm install
-
-echo "Building RapidCalc in production/release mode (skipping bundle formats)..."
-npx tauri build --no-bundle
-
-# 5. Determine binary location
-BIN_PATH="src-tauri/target/release/rapidcalc"
-if [ ! -f "$BIN_PATH" ]; then
-    BIN_PATH="src-tauri/target/release/RapidCalc"
+SKIP_BUILD=false
+if [ -n "$PRECOMPILED_BIN" ]; then
+    echo "--------------------------------------------------"
+    echo "Detected a precompiled binary at: $PRECOMPILED_BIN"
+    echo -n "Do you want to install this precompiled binary directly? [Y/n]: "
+    read -r USE_PRECOMPILED < /dev/tty || USE_PRECOMPILED="y"
+    if [[ "$USE_PRECOMPILED" =~ ^[Yy]?$ ]]; then
+        SKIP_BUILD=true
+        BIN_PATH="$PRECOMPILED_BIN"
+        echo "Using precompiled binary. Skipping build phase."
+    fi
+    echo "--------------------------------------------------"
 fi
 
-if [ ! -f "$BIN_PATH" ]; then
-    # Fallback search for compiled binary
-    FOUND_BIN=$(find src-tauri/target/release -maxdepth 1 -type f -executable -not -name "*.d" -not -name "*.so" | head -n 1)
-    if [ -n "$FOUND_BIN" ]; then
-        BIN_PATH="$FOUND_BIN"
-    else
-        echo "Error: Compiled binary not found."
-        exit 1
+if [ "$SKIP_BUILD" = false ]; then
+    # 4. Check for development tools
+    for cmd in node npm cargo; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            echo "Error: '$cmd' is not installed. Please install it to build RapidCalc from source."
+            exit 1
+        fi
+    done
+
+    # 5. Install Node dependencies and build
+    echo "Installing project Node.js dependencies..."
+    npm install
+
+    echo "Building RapidCalc in production/release mode (skipping bundle formats)..."
+    npx tauri build --no-bundle
+
+    # Determine binary location
+    BIN_PATH="src-tauri/target/release/rapidcalc"
+    if [ ! -f "$BIN_PATH" ]; then
+        BIN_PATH="src-tauri/target/release/RapidCalc"
+    fi
+    if [ ! -f "$BIN_PATH" ]; then
+        BIN_PATH="src-tauri/target/release/calculator-tauri-svelte"
+    fi
+    if [ ! -f "$BIN_PATH" ]; then
+        # Fallback search for compiled binary
+        FOUND_BIN=$(find src-tauri/target/release -maxdepth 1 -type f -executable -not -name "*.d" -not -name "*.so" | head -n 1)
+        if [ -n "$FOUND_BIN" ]; then
+            BIN_PATH="$FOUND_BIN"
+        else
+            echo "Error: Compiled binary not found."
+            exit 1
+        fi
     fi
 fi
 
