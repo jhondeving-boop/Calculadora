@@ -128,19 +128,58 @@ sudo cp hyprland-rapidcalc.conf /usr/share/rapidcalc/
 # Detect actual user's home directory (resolves issue when running under sudo)
 REAL_USER=${SUDO_USER:-$USER}
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
-HYPR_CONF="$REAL_HOME/.config/hypr/hyprland.conf"
+HYPR_DIR="$REAL_HOME/.config/hypr"
+HYPR_CONF="$HYPR_DIR/hyprland.conf"
+WINDOWRULES_CONF="$HYPR_DIR/windowrules.conf"
 
-if [ -f "$HYPR_CONF" ]; then
-    echo "Hyprland configuration detected for user '$REAL_USER' at: $HYPR_CONF"
+TARGET_CONF=""
+if [ -f "$WINDOWRULES_CONF" ]; then
+    TARGET_CONF="$WINDOWRULES_CONF"
+elif [ -f "$HYPR_CONF" ]; then
+    TARGET_CONF="$HYPR_CONF"
+fi
+
+if [ -n "$TARGET_CONF" ]; then
+    echo "Hyprland configuration detected for user '$REAL_USER' at: $TARGET_CONF"
     # Clean previous rules if exist
-    sed -i '/# === RAPIDCALC HYPRLAND RULES START ===/,/# === RAPIDCALC HYPRLAND RULES END ===/d' "$HYPR_CONF"
+    sed -i '/# === RAPIDCALC HYPRLAND RULES START ===/,/# === RAPIDCALC HYPRLAND RULES END ===/d' "$TARGET_CONF"
     
+    # Detect Hyprland version for syntax selection
+    IS_NEW_SYNTAX=false
+    HYPR_VER="0.0"
+    if command -v pacman >/dev/null 2>&1; then
+        HYPR_VER=$(pacman -Q hyprland 2>/dev/null | awk '{print $2}' | grep -oP '^[0-9]+\.[0-9]+' || echo "0.0")
+    fi
+    if [ "$HYPR_VER" = "0.0" ] && command -v hyprctl >/dev/null 2>&1; then
+        HYPR_VER=$(sudo -u "$REAL_USER" XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" hyprctl version 2>/dev/null | grep -oP 'Hyprland \K[0-9]+\.[0-9]+' || echo "0.0")
+    fi
+    major=$(echo "$HYPR_VER" | cut -d. -f1)
+    minor=$(echo "$HYPR_VER" | cut -d. -f2)
+    if [ -n "$major" ] && [ -n "$minor" ] && { [ "$major" -eq 0 -a "$minor" -ge 53 ] || [ "$major" -gt 0 ]; }; then
+        IS_NEW_SYNTAX=true
+    fi
+
     # Append the rules
-    echo "Appending window rules to $HYPR_CONF..."
-    cat << 'EOF' >> "$HYPR_CONF"
+    echo "Appending window rules to $TARGET_CONF..."
+    if [ "$IS_NEW_SYNTAX" = true ]; then
+        cat << 'EOF' >> "$TARGET_CONF"
 
 # === RAPIDCALC HYPRLAND RULES START ===
-# Reglas para RapidCalc (Calculadora) en Hyprland
+# Reglas para RapidCalc (Calculadora) en Hyprland (Sintaxis Nueva v0.53+)
+windowrule = float 1,match:title ^(RapidCalc)$
+windowrule = pin 1,match:title ^(RapidCalc)$
+windowrule = workspace special,match:title ^(RapidCalc)$
+windowrule = float 1,match:class ^(calculator-tauri-svelte)$
+windowrule = pin 1,match:class ^(calculator-tauri-svelte)$
+windowrule = move 78% 60%,match:title ^(RapidCalc)$
+windowrule = size 340 520,match:title ^(RapidCalc)$
+# === RAPIDCALC HYPRLAND RULES END ===
+EOF
+    else
+        cat << 'EOF' >> "$TARGET_CONF"
+
+# === RAPIDCALC HYPRLAND RULES START ===
+# Reglas para RapidCalc (Calculadora) en Hyprland (Sintaxis Heredada)
 windowrulev2 = float, title:^(RapidCalc)$
 windowrulev2 = pin, title:^(RapidCalc)$
 windowrulev2 = alwaysontop, title:^(RapidCalc)$
@@ -155,6 +194,7 @@ windowrulev2 = noshadow, title:^(RapidCalc)$
 windowrulev2 = focusonactivate off, title:^(RapidCalc)$
 # === RAPIDCALC HYPRLAND RULES END ===
 EOF
+    fi
     
     # Reload hyprland configuration if active
     if command -v hyprctl >/dev/null 2>&1; then
@@ -162,7 +202,7 @@ EOF
         sudo -u "$REAL_USER" XDG_RUNTIME_DIR="/run/user/$(id -u "$REAL_USER")" hyprctl reload || true
     fi
 else
-    echo "Hyprland config not found at $HYPR_CONF. Skipping automatic rules injection."
+    echo "Hyprland config not found. Skipping automatic rules injection."
 fi
 
 # 8. Configure Autostart (Launch on boot)
